@@ -333,11 +333,9 @@
     background-image: radial-gradient(var(--legacy-yellow) 1px, transparent 1.2px);
   }
 
-  /* The old delete controls were always-visible red dots. */
   & .element-delete-button,
   & .panel-delete-button,
   & .tab-delete-button {
-    opacity: 1;
     border-radius: 50%;
   }
 

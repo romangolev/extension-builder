@@ -964,17 +964,40 @@ h1 {
   line-height: 1;
 }
 
-/* The cross. Drawn in CSS so the markup stays a plain empty button. */
+/* The cross, drawn from two bars rather than typed as a glyph: a glyph's
+   optical centre depends on the font and sits off-centre in a small box.
+   Geometry stays in the middle at every size and in every theme. */
+.delete-button::before,
+.tab-delete-button::before,
+.panel-delete-button::before,
+.element-delete-button::before,
 .delete-button::after,
 .tab-delete-button::after,
 .panel-delete-button::after,
 .element-delete-button::after {
-  content: "\00d7";
-  font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: 12px;
-  line-height: 1;
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 58%;
+  height: 2px;
+  margin: -1px 0 0 -29%;
+  background-color: currentColor;
   pointer-events: none;
+}
+
+.delete-button::before,
+.tab-delete-button::before,
+.panel-delete-button::before,
+.element-delete-button::before {
+  transform: rotate(45deg);
+}
+
+.delete-button::after,
+.tab-delete-button::after,
+.panel-delete-button::after,
+.element-delete-button::after {
+  transform: rotate(-45deg);
 }
 
 .button:hover > .element-delete-button,
