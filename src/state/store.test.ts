@@ -68,3 +68,47 @@ describe("store", () => {
     expect(useStore.getState().tabs).toEqual(initialLayout().tabs);
   });
 });
+
+describe("reordering", () => {
+  function threeButtons() {
+    const { createElement } = useStore.getState();
+    const target = { kind: "panel", panelId: "panel1" } as const;
+    createElement({ type: "pushbutton", name: "B" }, target);
+    createElement({ type: "pushbutton", name: "C" }, target);
+    useStore.getState().renameElement("element1", "A");
+    return target;
+  }
+  const names = () =>
+    (useStore.getState().panels.panel1?.elements ?? []).map(
+      (id) => useStore.getState().elements[id]?.name,
+    );
+
+  it("moves an item right, accounting for its own removal", () => {
+    const target = threeButtons();
+    expect(useStore.getState().moveElement("element1", target, 3)).toBeNull();
+    expect(names()).toEqual(["B", "C", "A"]);
+  });
+
+  it("moves an item left", () => {
+    const target = threeButtons();
+    useStore.getState().moveElement("element3", target, 0);
+    expect(names()).toEqual(["C", "A", "B"]);
+  });
+
+  it("treats dropping on its own slot as a no-op", () => {
+    const target = threeButtons();
+    useStore.getState().moveElement("element2", target, 1);
+    useStore.getState().moveElement("element2", target, 2);
+    expect(names()).toEqual(["A", "B", "C"]);
+  });
+
+  it("inserts at an index in another container", () => {
+    threeButtons();
+    useStore.getState().addStack("panel1");
+    const stackId = useStore.getState().panels.panel1?.elements.at(-1) ?? "";
+    useStore.getState().moveElement("element2", { kind: "element", elementId: stackId }, 1);
+    const stack = useStore.getState().elements[stackId];
+    expect(stack?.children?.[1]).toBe("element2");
+    expect(names()).toEqual(["A", "C", "NEW STACK"]);
+  });
+});

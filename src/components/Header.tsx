@@ -4,20 +4,19 @@ import { sanitizeFileName } from "../domain/templates";
 import { validate } from "../domain/tree";
 import { buildZip, downloadBlob } from "../domain/zip";
 import { loadDefaultIcons } from "../state/defaultIcons";
+import { showAlert, showConfirm } from "../state/dialogs";
 import { clearDraft } from "../state/persistence";
 import { layoutOf, useStore } from "../state/store";
 
 const base = import.meta.env.BASE_URL;
 
 function reportProblems(problems: string[]) {
-  const lines = problems
-    .slice(0, 12)
-    .map((p, i) => `${i + 1}. ${p}`)
-    .join("\n");
-  const more = problems.length > 12 ? `\n...and ${problems.length - 12} more.` : "";
-  window.alert(
-    `This extension will not work as built:\n\n${lines}${more}\n\nFix these and try again.`,
-  );
+  const shown = problems.slice(0, 12);
+  const hidden = problems.length - shown.length;
+  void showAlert(`Fix these and try again.${hidden ? ` ...and ${hidden} more.` : ""}`, {
+    title: "This extension will not work as built",
+    details: shown,
+  });
 }
 
 function saveLayout() {
@@ -35,18 +34,19 @@ function loadLayout() {
     if (!file) return;
     try {
       useStore.getState().loadLayout(parseLayout(await file.text()));
-      window.alert("Layout loaded.");
+      void showAlert("Your layout replaced the current ribbon.", { title: "Layout loaded" });
     } catch (error) {
-      window.alert(`Could not load that layout: ${(error as Error).message}`);
+      void showAlert((error as Error).message, { title: "Could not load that layout" });
     }
   });
   input.click();
 }
 
-function resetLayout() {
+async function resetLayout() {
   const { elements, panels } = useStore.getState();
-  const ok = window.confirm(
-    `Discard the whole toolbar?\n\n${Object.keys(panels).length} panel(s) and ${Object.keys(elements).length} command(s) will be removed, and the saved draft deleted.\n\nThis cannot be undone. Save a layout first if you want to keep it.`,
+  const ok = await showConfirm(
+    `${Object.keys(panels).length} panel(s) and ${Object.keys(elements).length} command(s) will be removed, and the saved draft deleted.\n\nThis cannot be undone. Save a layout first if you want to keep it.`,
+    { title: "Discard the whole toolbar?", confirmLabel: "Reset", danger: true },
   );
   if (!ok) return;
   clearDraft();
@@ -69,7 +69,7 @@ export function Header() {
       downloadBlob(blob, name);
     } catch (error) {
       console.error("Error creating ZIP:", error);
-      window.alert(`Failed to create ZIP file: ${(error as Error).message}`);
+      void showAlert((error as Error).message, { title: "Failed to create the ZIP file" });
     } finally {
       setZipping(false);
     }
@@ -95,7 +95,7 @@ export function Header() {
           type="button"
           id="resetToolbar"
           className="toolbar-action toolbar-action-danger"
-          onClick={resetLayout}
+          onClick={() => void resetLayout()}
         >
           <span className="toolbar-action-label">Reset</span>
         </button>

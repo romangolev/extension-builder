@@ -40,20 +40,29 @@ function isDescendant(layout: Parts, candidateId: string, children: string[]): b
   return false;
 }
 
+export function targetIdOf(target: DropTarget): string {
+  return target.kind === "panel" ? target.panelId : target.elementId;
+}
+
+export function isSameContainer(element: Element, target: DropTarget): boolean {
+  return target.kind === "panel"
+    ? element.panelId === target.panelId
+    : element.parentId === target.elementId;
+}
+
 /**
  * Everything that must hold before a drop is allowed, gathered in one place
  * so the modal and the drag path can never disagree. Returns a reason, or
- * null when the move is legal.
+ * null when the move is legal. A move within the container the bundle is
+ * already in is a reorder, and is always legal.
  */
 export function moveRejection(layout: Parts, elementId: string, target: DropTarget): string | null {
   const element = layout.elements[elementId];
   if (!element) return "That bundle no longer exists.";
-  const targetId = target.kind === "panel" ? target.panelId : target.elementId;
+  const targetId = targetIdOf(target);
 
   if (targetId === elementId) return "A bundle cannot contain itself.";
-  if (element.panelId === targetId || element.parentId === targetId) {
-    return "It is already in that container.";
-  }
+  if (isSameContainer(element, target)) return null;
 
   const containerKey = containerKeyOf(layout, target);
   if (!containerKey) return "Unknown container.";

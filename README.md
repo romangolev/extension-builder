@@ -10,9 +10,18 @@ pnpm install
 pnpm dev          # local dev server
 pnpm lint         # biome check
 pnpm typecheck    # tsc
-pnpm test         # vitest
+pnpm test         # vitest unit + component tests
+pnpm test:e2e     # playwright, every spec at six screen sizes
 pnpm build        # production build into dist/
 ```
+
+`pnpm exec playwright install chromium` once before the first e2e run.
+
+`.mcp.json` registers three Playwright MCP servers for Claude Code (and any other
+MCP client) so an agent can drive the app at a fixed size: `playwright-desktop`
+(1920x1080), `playwright-laptop` (1280x800) and `playwright-mobile` (iPhone 15).
+Each runs headless in an isolated profile, from the version pinned in
+`package.json`.
 
 ## Deploying
 
@@ -92,6 +101,35 @@ app background show through as a grey wedge at the top left.
 Delete is a small red cross in the top-right of the thing it removes. It
 appears on hover, and its tooltip names the command and its bundle type.
 
+## Dragging
+
+Everything on the ribbon can be dragged with [dnd-kit](https://dndkit.com):
+commands, pulldowns and split buttons by the item itself, stacks by the dotted
+grip above them (every pixel of a stack is one of its rows, so it needs its own
+handle). Where you let go decides what happens:
+
+- on the left or right half of an item, the bundle lands before or after it,
+  shown as a blue bar; in a stack or an open group list the halves are top and
+  bottom;
+- on the middle half of a stack or a group, it goes inside, shown as an outline;
+- on the empty part of a panel, or an open group list, it goes at the end.
+
+The target turns red when the drop is illegal (a stack in a stack, a fourth row,
+a duplicate name, a group inside its own command), and letting go there explains
+why in a dialog and changes nothing. The rules are the same ones the modal uses
+(`src/domain/rules.ts`), so the two paths cannot disagree. Movement has to pass
+6px before a drag starts, so click (open a group), click-to-rename and
+double-click (edit) still work on the same item. The keyboard works too: focus an
+item, press Space, move with the arrow keys, press Space again.
+
+## Dialogs
+
+There is no `window.alert` or `window.confirm` anywhere. Every message and
+question goes through `showAlert` / `showConfirm` (`src/state/dialogs.ts`),
+rendered by one `DialogHost` above the bundle modal. Escape cancels the dialog
+before it reaches the modal underneath. The e2e suite fails any test in which a
+native dialog appears.
+
 ## Why the type table exists
 
 `src/domain/bundleTypes.ts` is the single source of truth for every bundle type. Each row
@@ -151,10 +189,27 @@ that sanitise to the same folder, a content button with no `.rfa`.
 
 `pnpm test` covers what `verify.js` used to: the postfix table against pyRevit's
 parser enum, the sanitiser, YAML quoting, every bundle type's files, nesting
-rules, the validator and the v1→v2 layout migration. It also exercises the store
-(add, move, delete, type change) and renders the app to click through creating a
-command and a stack.
+rules, the validator and the v1→v2 layout migration. It also covers the store
+(add, move, reorder, delete, type change), the drop resolver and the dialogs.
 
-The old Puppeteer checks (`verify-browser.js`, `verify-contrast.js`,
-`measure.js`) drove the pre-React DOM and are not ported yet; they are in git
-history if you want to bring them back as Playwright tests.
+`pnpm test:e2e` drives the built site in Chromium at 1920x1080, 1400x1050,
+1280x800, 1024x768, 768x1024 and 390x844. Every test fails on a page error, a
+console error, a failed request or a native dialog. Across all sizes it checks:
+
+- **layout**: no sideways page scroll, header actions inside the viewport and
+  apart, ribbon and folder preview not overlapping, tab strip flush with the
+  ribbon, items inside their panel, a stack's first row level with a
+  full-height command's icon;
+- **modal**: every bundle type fits the screen with Advanced open and closed,
+  with no scrollbar from 1024x768 up; validation errors appear in app dialogs;
+- **ribbon**: tabs, panels, rename, delete guards, stack confirm, draft restore
+  and RESET;
+- **drag and drop**: reorder in a panel and in a stack, into and out of a stack,
+  into a pulldown and back out of its open list, across panels, illegal and
+  over-full drops refused with a reason, click and double-click still working;
+- **export**: the ZIP holds only folder suffixes pyRevit knows, real PNG icons,
+  no `__init__.py` / `entrypoint.py` / `.pyrevit`; broken extensions are refused
+  with a list; save and load of a layout file round-trips.
+
+CI runs both suites before publishing, and uploads the Playwright report when a
+test fails.

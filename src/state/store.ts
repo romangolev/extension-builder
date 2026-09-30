@@ -5,8 +5,10 @@ import { type Element, initialLayout, type Layout } from "../domain/model";
 import {
   type DropTarget,
   hasSiblingNamed,
+  isSameContainer,
   moveRejection,
   newPushButton,
+  siblingsOf,
   uniqueName,
 } from "../domain/rules";
 
@@ -41,7 +43,7 @@ interface Actions {
   deleteElement(elementId: string): void;
   createElement(payload: ElementPayload, target: DropTarget): string | null;
   updateElement(elementId: string, payload: ElementPayload): void;
-  moveElement(elementId: string, target: DropTarget): string | null;
+  moveElement(elementId: string, target: DropTarget, index?: number): string | null;
   loadLayout(layout: Layout): void;
   reset(): void;
   openModal(request: ModalRequest): void;
@@ -92,17 +94,24 @@ function detach(s: Layout, elementId: string) {
   }
 }
 
-function attach(s: Layout, elementId: string, target: DropTarget) {
+function insertAt(list: string[], id: string, index?: number) {
+  if (index === undefined || index < 0 || index > list.length) list.push(id);
+  else list.splice(index, 0, id);
+}
+
+function attach(s: Layout, elementId: string, target: DropTarget, index?: number) {
   const element = s.elements[elementId];
   if (!element) return;
   if (target.kind === "panel") {
-    s.panels[target.panelId]?.elements.push(elementId);
+    const panel = s.panels[target.panelId];
+    if (!panel) return;
+    insertAt(panel.elements, elementId, index);
     element.panelId = target.panelId;
   } else {
     const container = s.elements[target.elementId];
     if (!container) return;
     container.children ??= [];
-    container.children.push(elementId);
+    insertAt(container.children, elementId, index);
     element.parentId = target.elementId;
   }
 }
@@ -303,13 +312,22 @@ export const useStore = create<Store>()(
         s.elements[elementId] = next;
       }),
 
-    moveElement: (elementId, target) => {
-      const reason = moveRejection(get(), elementId, target);
+    moveElement: (elementId, target, index) => {
+      const layout = get();
+      const reason = moveRejection(layout, elementId, target);
       if (reason) return reason;
+      const element = layout.elements[elementId];
+      let at = index;
+      // `index` is a slot in the container as it is now. Taking the bundle
+      // out of the same container first shifts every later slot down by one.
+      if (element && at !== undefined && isSameContainer(element, target)) {
+        const from = siblingsOf(layout, target).indexOf(elementId);
+        if (from !== -1 && from < at) at -= 1;
+        if (from === at) return null;
+      }
       set((s) => {
         detach(s, elementId);
-        attach(s, elementId, target);
-        s.openGroup = null;
+        attach(s, elementId, target, at);
       });
       return null;
     },

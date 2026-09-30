@@ -1871,3 +1871,320 @@ input[type="file"] {
     height: 34px;
   }
 }
+
+/* ===== APP DIALOGS =====
+   Replace window.alert / window.confirm. Above the bundle modal (2000), so a
+   validation message raised from inside the modal sits on top of it. */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dialog {
+  width: 440px;
+  max-width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 16px 18px 14px;
+  background-color: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-separator);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-ui);
+}
+
+.dialog-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.dialog-message {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  white-space: pre-line;
+}
+
+.dialog-details {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.dialog-details li + li {
+  margin-top: 4px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.dialog-button {
+  min-width: 72px;
+  padding: 5px 12px;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  background-color: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+}
+
+.dialog-button:hover {
+  background-color: var(--surface-hover);
+}
+
+.dialog-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dialog-button-primary {
+  color: var(--on-accent);
+  background-color: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+.dialog-button-primary:hover {
+  background-color: var(--accent-hover);
+}
+
+.dialog-button-danger {
+  color: #ffffff;
+  background-color: var(--danger-fill);
+  border-color: var(--danger-fill);
+}
+
+.dialog-button-danger:hover {
+  background-color: var(--delete-btn-hover);
+}
+
+/* ===== DRAG AND DROP =====
+   The item being dragged stays in place, dimmed; a ghost follows the pointer.
+   The drop point is a bar on the side of the item it will land beside, or an
+   outline around the container it will land in. Red means "not allowed". */
+.dnd-source {
+  opacity: 0.35;
+}
+
+.drag-overlay {
+  cursor: grabbing;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* While something is being dragged, hover chrome would compete with the drop
+   indicator, so it is switched off: no hover fills, no delete crosses. */
+.is-dragging,
+.is-dragging * {
+  cursor: grabbing !important;
+}
+
+.is-dragging .button:hover,
+.is-dragging .stack:hover,
+.is-dragging .group:hover {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.is-dragging .element-delete-button,
+.is-dragging .panel-delete-button,
+.is-dragging .tab-delete-button {
+  opacity: 0 !important;
+}
+
+.drag-overlay .button,
+.drag-overlay .stack,
+.drag-overlay .group {
+  background-color: var(--surface-hover);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.drop-before,
+.drop-after {
+  position: relative;
+}
+
+.drop-before::before,
+.drop-after::before {
+  content: "";
+  position: absolute;
+  z-index: 7;
+  background-color: var(--accent-strong);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.drop-axis-x.drop-before::before,
+.drop-axis-x.drop-after::before {
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+}
+
+.drop-axis-x.drop-before::before {
+  left: -3px;
+}
+
+.drop-axis-x.drop-after::before {
+  right: -3px;
+}
+
+.drop-axis-y.drop-before::before,
+.drop-axis-y.drop-after::before {
+  left: 2px;
+  right: 2px;
+  height: 3px;
+}
+
+.drop-axis-y.drop-before::before {
+  top: -2px;
+}
+
+.drop-axis-y.drop-after::before {
+  bottom: -2px;
+}
+
+.drop-into {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 1px;
+}
+
+.drop-invalid.drop-into,
+.drop-invalid.drag-over {
+  outline: 2px dashed var(--danger-fill);
+  outline-offset: 1px;
+}
+
+.drop-invalid.drop-before::before,
+.drop-invalid.drop-after::before {
+  background-color: var(--danger-fill);
+}
+
+.is-dragging .drop-invalid.button,
+.is-dragging .drop-invalid.stack,
+.is-dragging .drop-invalid.group,
+.drop-invalid.pulldown-content,
+.drop-invalid.panel-content {
+  background-color: #f1d3ce;
+}
+
+/* A stack is all rows, so it gets its own handle: a dotted bar in the panel's
+   top padding, just above the stack. Faint at rest so it can be found without
+   hovering, solid when the stack is under the pointer or it has focus. */
+.stack-grip {
+  position: absolute;
+  top: -6px;
+  left: 6px;
+  right: 6px;
+  height: 5px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background-color: transparent;
+  background-image: radial-gradient(var(--text-secondary) 1px, transparent 1.2px);
+  background-size: 4px 4px;
+  background-position: center;
+  opacity: 0.35;
+  cursor: grab;
+  z-index: 5;
+  touch-action: none;
+}
+
+.stack:hover > .stack-grip,
+.stack-grip:focus-visible {
+  opacity: 1;
+  background-color: var(--surface-hover);
+}
+
+.stack-grip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.button,
+.group {
+  touch-action: none;
+}
+
+/* ===== NARROW SCREENS =====
+   Below 700px the ribbon and the folder tree no longer fit side by side, so
+   they stack: the ribbon first, full width, the tree underneath it. The header
+   actions wrap onto their own row instead of pushing the page sideways, and
+   the tab strip scrolls within itself while its + stays pinned at the end. */
+@media (max-width: 700px) {
+  body {
+    padding: 12px;
+  }
+
+  header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .logo {
+    gap: 10px;
+  }
+
+  .logo span {
+    font-size: 0.9rem;
+    margin-top: 2px;
+  }
+
+  .download-button {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .download-button .toolbar-action {
+    flex: 1 1 auto;
+  }
+
+  .extension-name {
+    width: 100%;
+  }
+
+  .workspace {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ribbon-container {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .preview-panel {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .tabs {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .add-tab-inline {
+    margin-left: 4px;
+  }
+}

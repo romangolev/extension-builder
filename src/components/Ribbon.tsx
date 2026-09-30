@@ -1,4 +1,5 @@
-import { dropTargetProps, useIsDragOver } from "../state/drag";
+import { useContainerDrop } from "../dnd/hooks";
+import { showAlert } from "../state/dialogs";
 import { useStore } from "../state/store";
 import { CommitInput } from "./inputs";
 import { DeleteButton, RibbonElement } from "./RibbonItems";
@@ -30,7 +31,7 @@ function TabStrip() {
               title="Delete Tab"
               onDelete={() => {
                 const error = deleteTab(tabId);
-                if (error) window.alert(error);
+                if (error) void showAlert(error, { title: "Can't delete that tab" });
               }}
             />
           </div>
@@ -51,7 +52,7 @@ function TabStrip() {
 function RibbonPanel({ panelId }: { panelId: string }) {
   const panel = useStore((s) => s.panels[panelId]);
   const target = { kind: "panel", panelId } as const;
-  const over = useIsDragOver(target);
+  const drop = useContainerDrop(target, 0);
   if (!panel) return null;
   const { openModal, addStack, addPanel, renamePanel, deletePanel } = useStore.getState();
 
@@ -77,11 +78,15 @@ function RibbonPanel({ panelId }: { panelId: string }) {
       style={{ position: "relative" }}
     >
       <div
-        className={over ? "panel-content drag-over" : "panel-content"}
-        {...dropTargetProps(target)}
+        ref={drop.ref}
+        className={drop.className ? `panel-content ${drop.className}` : "panel-content"}
       >
         {panel.elements.map((elementId) => (
-          <RibbonElement key={elementId} elementId={elementId} />
+          <RibbonElement
+            key={elementId}
+            elementId={elementId}
+            place={{ container: target, axis: "x", layer: 0 }}
+          />
         ))}
       </div>
       <div className="panel-footer">
@@ -120,7 +125,7 @@ function RibbonPanel({ panelId }: { panelId: string }) {
         title="Delete this panel and everything in it"
         onDelete={() => {
           const error = deletePanel(panelId);
-          if (error) window.alert(error);
+          if (error) void showAlert(error, { title: "Can't delete that panel" });
         }}
       />
     </div>

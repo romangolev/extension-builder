@@ -26,6 +26,7 @@ import {
 } from "../domain/rules";
 import { readFileAsDataUrl } from "../domain/zip";
 import { FALLBACK_ICON } from "../state/defaultIcons";
+import { isDialogOpen, showAlert, showConfirm } from "../state/dialogs";
 import { type ElementPayload, type ModalRequest, useStore } from "../state/store";
 
 const IMAGE_TYPES = "image/png,image/jpeg,image/gif,image/bmp,image/svg+xml";
@@ -234,7 +235,7 @@ function ModalBody({ request }: { request: ModalRequest }) {
 
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      if (e.key !== "Escape" || isDialogOpen()) return;
       e.preventDefault();
       closeModal();
     };
@@ -258,12 +259,14 @@ function ModalBody({ request }: { request: ModalRequest }) {
 
   const submit = async () => {
     if (!type || !typeDef) {
-      window.alert("Pick a command type first.");
+      void showAlert("Pick a command type first.", { title: "No type selected" });
       return;
     }
     const trimmedName = name.trim();
     if (!trimmedName) {
-      window.alert("A name is required - it becomes the bundle folder name.");
+      void showAlert("A name is required - it becomes the bundle folder name.", {
+        title: "Name required",
+      });
       return;
     }
 
@@ -273,7 +276,9 @@ function ModalBody({ request }: { request: ModalRequest }) {
     // Without these pyRevit logs an error and the button never binds.
     for (const key of typeDef.required ?? []) {
       if (!advanced[key]) {
-        window.alert(`${FIELDS[key].label} is required for a ${typeDef.label}.`);
+        void showAlert(`${FIELDS[key].label} is required for a ${typeDef.label}.`, {
+          title: "Missing required field",
+        });
         setAdvancedOpen(true);
         return;
       }
@@ -301,16 +306,12 @@ function ModalBody({ request }: { request: ModalRequest }) {
     if (setup.elementId && existing) {
       const oldDef = TYPES[existing.type];
       const children = existing.children?.length ?? 0;
-      if (
-        oldDef.container &&
-        !typeDef.container &&
-        children &&
-        !window.confirm(
-          `This ${oldDef.label.toLowerCase()} contains ${children} command(s). Changing it to a ${typeDef.label.toLowerCase()} will delete them. Continue?`,
-        )
-      ) {
-        closeModal();
-        return;
+      if (oldDef.container && !typeDef.container && children) {
+        const ok = await showConfirm(
+          `This ${oldDef.label.toLowerCase()} contains ${children} command(s). Changing it to a ${typeDef.label.toLowerCase()} will delete them.`,
+          { title: "Delete its commands?", confirmLabel: "Change type", danger: true },
+        );
+        if (!ok) return;
       }
       store.updateElement(setup.elementId, payload);
       closeModal();
@@ -320,7 +321,7 @@ function ModalBody({ request }: { request: ModalRequest }) {
     if (!setup.target) return;
     const error = store.createElement(payload, setup.target);
     if (error) {
-      window.alert(error);
+      void showAlert(error, { title: "Name already used" });
       return;
     }
     closeModal();

@@ -1,4 +1,5 @@
 import { type KeyboardEvent, type MouseEvent, useEffect, useRef, useState } from "react";
+import { showAlert } from "../state/dialogs";
 
 function commitKeys(e: KeyboardEvent<HTMLInputElement>, reset: () => void) {
   if (e.key === "Enter") {
@@ -34,7 +35,7 @@ export function CommitInput({
     if (draft === value) return;
     const error = onCommit(draft);
     if (error === null) return;
-    if (error) window.alert(error);
+    if (error) void showAlert(error, { title: "Name not changed" });
     setDraft(value);
   };
 

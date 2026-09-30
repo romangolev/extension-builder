@@ -1,7 +1,9 @@
+import { type RibbonItemPlace, useContainerDrop, useRibbonItemDnd } from "../dnd/hooks";
 import { TYPES } from "../domain/bundleTypes";
 import type { Element } from "../domain/model";
+import type { DropTarget } from "../domain/rules";
 import { FALLBACK_ICON } from "../state/defaultIcons";
-import { dragSourceProps, dropTargetProps, useIsDragging, useIsDragOver } from "../state/drag";
+import { showConfirm } from "../state/dialogs";
 import { useStore } from "../state/store";
 import { useIcons } from "./IconsContext";
 import { EditableLabel } from "./inputs";
@@ -49,16 +51,14 @@ function ElementDelete({ elementId, element }: { elementId: string; element: Ele
     <DeleteButton
       className="element-delete-button"
       title={title}
-      onDelete={() => {
+      onDelete={async () => {
         const count = element.children?.length ?? 0;
-        if (
-          def.container &&
-          count &&
-          !window.confirm(
+        if (def.container && count) {
+          const ok = await showConfirm(
             `This ${def.label.toLowerCase()} contains ${count} command(s). Delete them too?`,
-          )
-        ) {
-          return;
+            { title: `Delete "${element.name}"?`, confirmLabel: "Delete", danger: true },
+          );
+          if (!ok) return;
         }
         useStore.getState().deleteElement(elementId);
       }}
@@ -70,46 +70,54 @@ function openEditor(elementId: string) {
   useStore.getState().openModal({ mode: "edit", elementId });
 }
 
-export function RibbonElement({ elementId }: { elementId: string }) {
-  const element = useStore((s) => s.elements[elementId]);
-  if (!element) return null;
-  if (element.type === "stack") return <StackItem elementId={elementId} element={element} />;
-  if (TYPES[element.type].container) return <GroupItem elementId={elementId} element={element} />;
-  return <CommandItem elementId={elementId} element={element} />;
+function renamer(elementId: string) {
+  return (next: string) => useStore.getState().renameElement(elementId, next);
 }
 
-function CommandItem({ elementId, element }: { elementId: string; element: Element }) {
+interface ItemProps {
+  elementId: string;
+  element: Element;
+  place: RibbonItemPlace;
+}
+
+export function RibbonElement({ elementId, place }: { elementId: string; place: RibbonItemPlace }) {
+  const element = useStore((s) => s.elements[elementId]);
+  if (!element) return null;
+  const props = { elementId, element, place };
+  if (element.type === "stack") return <StackItem {...props} />;
+  if (TYPES[element.type].container) return <GroupItem {...props} />;
+  return <CommandItem {...props} />;
+}
+
+function CommandItem({ elementId, element, place }: ItemProps) {
   const def = TYPES[element.type];
-  const dragging = useIsDragging(elementId);
+  const dnd = useRibbonItemDnd(elementId, place);
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: ribbon items are drag handles
+    // biome-ignore lint/a11y/noStaticElementInteractions: role and tabIndex come from dnd-kit's attributes in dnd.props
     <div
-      className={cx("button", def.postfix.slice(1), dragging && "dragging no-select")}
+      ref={dnd.ref}
+      {...dnd.props}
+      className={cx("button", def.postfix.slice(1), dnd.className)}
       data-type={element.type}
       data-button-id={elementId}
+      data-name={element.name}
       title={`${def.label} - ${def.postfix}`}
       onDoubleClick={(e) => {
         e.stopPropagation();
         openEditor(elementId);
       }}
-      {...dragSourceProps(elementId)}
     >
       <Icon element={element} />
-      <EditableLabel
-        className="button-name"
-        value={element.name}
-        onCommit={(next) => useStore.getState().renameElement(elementId, next)}
-      />
+      <EditableLabel className="button-name" value={element.name} onCommit={renamer(elementId)} />
       <ElementDelete elementId={elementId} element={element} />
     </div>
   );
 }
 
-function GroupItem({ elementId, element }: { elementId: string; element: Element }) {
+function GroupItem({ elementId, element, place }: ItemProps) {
   const def = TYPES[element.type];
-  const dragging = useIsDragging(elementId);
-  const target = { kind: "element", elementId } as const;
-  const over = useIsDragOver(target);
+  const into: DropTarget = { kind: "element", elementId };
+  const dnd = useRibbonItemDnd(elementId, place, into);
   const count = element.children?.length ?? 0;
 
   const open = (anchor: HTMLElement) => {
@@ -122,32 +130,24 @@ function GroupItem({ elementId, element }: { elementId: string; element: Element
   };
 
   return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: ribbon items are drag handles
+    // biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: role and tabIndex come from dnd-kit's attributes in dnd.props; Enter starts a keyboard drag, so opening stays a pointer shortcut
     <div
-      className={cx(
-        "group",
-        def.postfix.slice(1),
-        dragging && "dragging no-select",
-        over && "drag-over",
-      )}
+      ref={dnd.ref}
+      {...dnd.props}
+      className={cx("group", def.postfix.slice(1), dnd.className)}
       data-type={element.type}
       data-button-id={elementId}
+      data-name={element.name}
       title={`${def.label} - ${def.postfix} "${element.name}" with ${count} command(s). Click the icon to open them.`}
       onClick={(e) => open(e.currentTarget)}
       onDoubleClick={(e) => {
         e.stopPropagation();
         openEditor(elementId);
       }}
-      {...dragSourceProps(elementId)}
-      {...dropTargetProps(target)}
     >
       <div className="group-header">
         <Icon element={element} />
-        <EditableLabel
-          className="button-name"
-          value={element.name}
-          onCommit={(next) => useStore.getState().renameElement(elementId, next)}
-        />
+        <EditableLabel className="button-name" value={element.name} onCommit={renamer(elementId)} />
         <div className="group-caret" aria-hidden="true" />
       </div>
       <ElementDelete elementId={elementId} element={element} />
@@ -155,37 +155,45 @@ function GroupItem({ elementId, element }: { elementId: string; element: Element
   );
 }
 
-function StackItem({ elementId, element }: { elementId: string; element: Element }) {
+function StackItem({ elementId, element, place }: ItemProps) {
   const def = TYPES.stack;
   const children = element.children ?? [];
-  const dragging = useIsDragging(elementId);
-  const target = { kind: "element", elementId } as const;
-  const over = useIsDragOver(target);
+  const into: DropTarget = { kind: "element", elementId };
+  const dnd = useRibbonItemDnd(elementId, place, into, { handle: true });
   const remaining = (def.maxChildren ?? 3) - children.length;
-  const add = () => useStore.getState().openModal({ mode: "create", kind: "command", target });
+  const childPlace: RibbonItemPlace = { container: into, axis: "y", layer: place.layer };
+  const add = () =>
+    useStore.getState().openModal({ mode: "create", kind: "command", target: into });
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: ribbon items are drag handles
+    // biome-ignore lint/a11y/noStaticElementInteractions: role and tabIndex come from dnd-kit's attributes in dnd.props
     <div
+      ref={dnd.ref}
+      {...dnd.props}
       className={cx(
         "stack",
-        dragging && "dragging no-select",
-        over && "drag-over",
         children.length < (def.minChildren ?? 2) && "stack-invalid",
+        dnd.className,
       )}
       data-type="stack"
       data-button-id={elementId}
+      data-name={element.name}
       title={`Stack - ${def.postfix} "${element.name}" with ${children.length} command(s). Double-click to edit.`}
       onDoubleClick={(e) => {
         e.stopPropagation();
         openEditor(elementId);
       }}
-      {...dragSourceProps(elementId)}
-      {...dropTargetProps(target)}
     >
+      <button
+        type="button"
+        {...dnd.handleProps}
+        className="stack-grip"
+        title={`Drag to move stack "${element.name}"`}
+        aria-label={`Move stack ${element.name}`}
+      />
       <div className="stack-items">
         {children.map((childId) => (
-          <RibbonElement key={childId} elementId={childId} />
+          <RibbonElement key={childId} elementId={childId} place={childPlace} />
         ))}
       </div>
       {remaining > 0 && (
@@ -213,28 +221,41 @@ function StackItem({ elementId, element }: { elementId: string; element: Element
   );
 }
 
+const EDITOR_LAYER = 1;
+
 /** The floating list of a pulldown / split button's commands. */
 export function GroupEditor() {
   const openGroup = useStore((s) => s.openGroup);
   const group = useStore((s) => (s.openGroup ? s.elements[s.openGroup.elementId] : undefined));
   if (!openGroup || !group) return null;
-  const target = { kind: "element", elementId: openGroup.elementId } as const;
+  return <GroupEditorBody groupId={openGroup.elementId} group={group} {...openGroup} />;
+}
+
+function GroupEditorBody({
+  groupId,
+  group,
+  top,
+  left,
+}: {
+  groupId: string;
+  group: Element;
+  top: number;
+  left: number;
+}) {
+  const target: DropTarget = { kind: "element", elementId: groupId };
+  const drop = useContainerDrop(target, EDITOR_LAYER);
+  const place: RibbonItemPlace = { container: target, axis: "y", layer: EDITOR_LAYER };
 
   return (
     <div
       className="pulldown-content-container"
-      style={{
-        display: "block",
-        position: "absolute",
-        top: openGroup.top,
-        left: openGroup.left,
-        zIndex: 1000,
-      }}
+      data-testid="group-editor"
+      style={{ display: "block", position: "absolute", top, left, zIndex: 1000 }}
     >
-      <div className="pulldown-content">
+      <div ref={drop.ref} className={cx("pulldown-content", drop.className)}>
         <div className="pulldown-label">{group.name.toUpperCase()}</div>
         {(group.children ?? []).map((childId) => (
-          <RibbonElement key={childId} elementId={childId} />
+          <RibbonElement key={childId} elementId={childId} place={place} />
         ))}
         <button
           type="button"
