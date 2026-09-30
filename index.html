@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>pyRevit Extension Builder</title>
     <link rel="icon" href="/icon.png" />
+    <script>
+      // Apply the theme before first paint, so a reload never flashes the
+      // default look. Same rule as src/theme/store.ts: ?theme= wins over the
+      // saved choice. Unknown ids are corrected once the app boots.
+      (() => {
+        var root = document.documentElement;
+        var theme = "builder";
+        var prefs = {};
+        try {
+          prefs = JSON.parse(localStorage.getItem("pyrevit-extension-builder:prefs:v1") || "{}");
+        } catch (_error) {}
+        if (prefs && typeof prefs.theme === "string") theme = prefs.theme;
+        var fromUrl = new URLSearchParams(location.search).get("theme");
+        if (fromUrl) theme = fromUrl;
+        if (/^[a-z0-9-]+$/.test(theme)) root.setAttribute("data-theme", theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -93,7 +93,11 @@ test.describe("layout", () => {
     }
   });
 
-  test("a stack's first row lines up with a full-height command's icon", async ({ page }) => {
+  test("a stack's first row lines up with a full-height command's icon", async ({
+    page,
+    theme,
+  }) => {
+    test.skip(theme !== "builder", "a Revit ribbon rule; the legacy theme never followed it");
     await addStack(page);
     const solo = await box(page, '.panel-content > [data-name="Button 1"] .button-icon');
     const firstRow = await box(page, ".stack .stack-items > .button .button-icon");

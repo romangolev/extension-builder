@@ -49,6 +49,15 @@ test.describe("bundle modal", () => {
     await info.attach("modal", { body: await page.screenshot(), contentType: "image/png" });
   });
 
+  test("opening the modal does not move the page underneath", async ({ page }) => {
+    const ids = ["#resetToolbar", "#downloadZip", "#extensionName", ".ribbon"];
+    const boxes = () => Promise.all(ids.map((id) => page.locator(id).first().boundingBox()));
+    const before = await boxes();
+    await page.getByRole("button", { name: "BUTTON", exact: true }).click();
+    await expect(page.locator("#buttonModal")).toBeVisible();
+    expect(await boxes()).toEqual(before);
+  });
+
   test("the group picker only offers containers", async ({ page }) => {
     await page.getByRole("button", { name: "GROUP", exact: true }).click();
     await expect(page.locator(".button-type .type-postfix")).toHaveText([

@@ -2,11 +2,11 @@ import {
   type KeyboardEvent,
   type ReactNode,
   type RefObject,
-  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   type ContainerKey,
   FIELD_KEYS,
@@ -26,7 +26,7 @@ import {
 } from "../domain/rules";
 import { readFileAsDataUrl } from "../domain/zip";
 import { FALLBACK_ICON } from "../state/defaultIcons";
-import { isDialogOpen, showAlert, showConfirm } from "../state/dialogs";
+import { showAlert, showConfirm } from "../state/dialogs";
 import { type ElementPayload, type ModalRequest, useStore } from "../state/store";
 
 const IMAGE_TYPES = "image/png,image/jpeg,image/gif,image/bmp,image/svg+xml";
@@ -233,16 +233,6 @@ function ModalBody({ request }: { request: ModalRequest }) {
   const darkIconRef = useRef<HTMLInputElement>(null);
   const onIconRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key !== "Escape" || isDialogOpen()) return;
-      e.preventDefault();
-      closeModal();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [closeModal]);
-
   if (!setup) return null;
   const typeDef = type ? TYPES[type] : null;
   const pickerHasType =
@@ -327,7 +317,7 @@ function ModalBody({ request }: { request: ModalRequest }) {
     closeModal();
   };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+  const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key !== "Enter") return;
     const tag = (e.target as HTMLElement).tagName;
     if (tag === "TEXTAREA" || tag === "BUTTON" || tag === "SUMMARY") return;
@@ -340,13 +330,28 @@ function ModalBody({ request }: { request: ModalRequest }) {
   const showDarkIcon = (typeDef?.darkIcons ?? []).length > 0;
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: Enter submits from any field in the dialog
-    <div className="modal" id="buttonModal" style={{ display: "block" }} onKeyDown={onKeyDown}>
-      <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <button type="button" className="close-modal" aria-label="Close" onClick={closeModal}>
-          &times;
-        </button>
-        <h2 id="modalTitle">{setup.title}</h2>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) closeModal();
+      }}
+    >
+      <DialogContent
+        className="modal-content"
+        overlayProps={{ id: "buttonModal", className: "modal" }}
+        aria-describedby={undefined}
+        onKeyDown={onKeyDown}
+        // Nothing is focused on open, as before; Tab still enters the dialog.
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        // A stray click on the backdrop must not throw away a half-filled form.
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogTitle
+          id="modalTitle"
+          className="modal-title text-[1.5em] leading-[inherit] font-bold"
+        >
+          {setup.title}
+        </DialogTitle>
 
         <h3 className="modal-section-title">Bundle Type</h3>
         <TypePicker
@@ -482,7 +487,7 @@ function ModalBody({ request }: { request: ModalRequest }) {
             Cancel
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

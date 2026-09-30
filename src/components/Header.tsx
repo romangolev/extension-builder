@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import logoUrl from "../assets/logo.svg";
 import { parseLayout, snapshot } from "../domain/layoutFile";
 import { sanitizeFileName } from "../domain/templates";
 import { validate } from "../domain/tree";
@@ -7,8 +9,8 @@ import { loadDefaultIcons } from "../state/defaultIcons";
 import { showAlert, showConfirm } from "../state/dialogs";
 import { clearDraft } from "../state/persistence";
 import { layoutOf, useStore } from "../state/store";
-
-const base = import.meta.env.BASE_URL;
+import { MusicControl } from "./MusicControl";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 function reportProblems(problems: string[]) {
   const shown = problems.slice(0, 12);
@@ -78,38 +80,40 @@ export function Header() {
   return (
     <header>
       <div className="logo">
-        <img src={`${base}logo.svg`} alt="pyRevit Logo" width="198" height="218" />
+        <img className="logo-mark" src={logoUrl} alt="pyRevit Logo" width="198" height="218" />
         <div className="logo-text">
           <h1 className="glowing-text-title">pyRevit</h1>
           <span className="glowing-text-title">extension builder</span>
         </div>
       </div>
       <div className="download-button">
-        <button type="button" id="loadConfig" className="toolbar-action" onClick={loadLayout}>
+        <MusicControl />
+        <ThemeSwitcher />
+        <Button variant="toolbar" size="toolbar" id="loadConfig" onClick={loadLayout}>
           <span className="toolbar-action-label">Load layout</span>
-        </button>
-        <button type="button" id="saveConfig" className="toolbar-action" onClick={saveLayout}>
+        </Button>
+        <Button variant="toolbar" size="toolbar" id="saveConfig" onClick={saveLayout}>
           <span className="toolbar-action-label">Save layout</span>
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="toolbar-danger"
+          size="toolbar"
           id="resetToolbar"
-          className="toolbar-action toolbar-action-danger"
           onClick={() => void resetLayout()}
         >
           <span className="toolbar-action-label">Reset</span>
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="toolbar-primary"
+          size="toolbar"
           id="downloadZip"
-          className="toolbar-action toolbar-action-primary"
           disabled={zipping}
           onClick={() => void download()}
         >
           <span className="toolbar-action-label">
             {zipping ? "Creating ZIP file..." : "Download"}
           </span>
-        </button>
+        </Button>
       </div>
     </header>
   );

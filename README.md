@@ -2,8 +2,9 @@
 
 A tool to create your pyRevit extension with no knowledge of programming.
 
-React + TypeScript single-page app, built with Vite, linted and formatted with
-Biome, tested with Vitest, managed with pnpm.
+React + TypeScript single-page app, built with Vite, styled with Tailwind v4 and
+shadcn/ui, linted and formatted with Biome, tested with Vitest and Playwright,
+managed with pnpm.
 
 ```sh
 pnpm install
@@ -11,7 +12,8 @@ pnpm dev          # local dev server
 pnpm lint         # biome check
 pnpm typecheck    # tsc
 pnpm test         # vitest unit + component tests
-pnpm test:e2e     # playwright, every spec at six screen sizes
+pnpm test:e2e     # playwright, every spec at six screen sizes in every theme
+pnpm test:visual  # pixel baselines per theme and size (macOS; see Checks)
 pnpm build        # production build into dist/
 ```
 
@@ -126,9 +128,87 @@ item, press Space, move with the arrow keys, press Space again.
 
 There is no `window.alert` or `window.confirm` anywhere. Every message and
 question goes through `showAlert` / `showConfirm` (`src/state/dialogs.ts`),
-rendered by one `DialogHost` above the bundle modal. Escape cancels the dialog
-before it reaches the modal underneath. The e2e suite fails any test in which a
-native dialog appears.
+rendered by one `DialogHost` as a shadcn `AlertDialog` above the bundle modal
+(itself a shadcn `Dialog`). Escape cancels the dialog before it reaches the
+modal underneath: `DialogHost` claims Escape on `window` in the capture phase,
+because Radix only learns a new layer is on top after a re-render, and a key
+pressed in that gap would close the modal instead. The e2e suite fails any test
+in which a native dialog appears.
+
+## Themes
+
+The palette button at the left of the header switches the whole page between
+themes instantly, with no reload and without touching the ribbon you are
+building. The choice is saved per browser; `?theme=<id>` in the URL overrides
+it, which is how a link can open the builder in a given theme. A tiny inline
+script in `index.html` applies the saved theme before first paint, so a reload
+never flashes the default.
+
+| id | Theme | Source |
+| --- | --- | --- |
+| `builder` | Builder (default) | the current Revit-inspired grey ribbon |
+| `legacy-8bit` | Legacy 8-bit | the original design, ported from commit `2a7e8dd` (the last before the Revit redesign in `283e834`) |
+
+**A theme is CSS and nothing else.** Switching sets `data-theme` on `<html>`;
+no component reads the active theme, so every theme renders byte-for-byte the
+same markup (an e2e test compares it) and keeps the same layout (another
+checks that nothing moves by more than a changed typeface accounts for). A theme
+restyles colours, type, radii, borders and glows; heavier frames are drawn with
+outlines and inset shadows so no box changes size.
+
+**Themes never change what you download.** The exported ZIP is byte-for-byte
+the same in every theme, and a test checks it.
+
+### How a theme is built
+
+The cascade has five layers, lowest first (`src/theme/tailwind.css`):
+Tailwind's theme variables, a base layer, the app's stylesheet (`legacy`),
+component utilities, and themes last. Tailwind's preflight is deliberately not
+imported: the app's stylesheet was written against browser defaults, and
+preflight would silently restyle it. shadcn parts carry `data-slot`, and only
+those get the few resets they need.
+
+A theme is one CSS file under `src/theme/themes/`, scoped to
+`:root[data-theme="<id>"]`, plus a line in `src/theme/themes.ts` that is only
+menu metadata (label, description, swatch). The file sets the app's design
+tokens (`--surface-*`, `--text-*`, `--accent*`, `--danger*`, fonts, radii); the
+shadcn tokens (`--background`, `--primary`, `--border`, `--ring`, …) are derived
+from those in `src/theme/tokens.css`, so setting the app tokens themes every
+shadcn component too. There is no `dark:` variant in the components: a dark
+theme is a theme whose tokens are dark, and Tailwind's default `dark:` would
+follow the OS setting instead of the user's choice.
+
+Everything a theme swaps is swappable from CSS:
+
+- **fonts**: `@import` a `@fontsource` package in the theme file and name it in
+  `--font-ui`; the browser downloads it only once text uses it, so other themes
+  never pay for it;
+- **the logo**: the header mark is one `<img>` in every theme; a theme replaces
+  the picture with `content: url(...)` on `.logo-mark` (supported by Chromium,
+  Firefox and WebKit on images);
+- **the soundtrack**: its control is in every theme's markup and
+  `display: none` by default; a theme that wants it shows it. When a switch
+  hides it, it stops playing — it notices it is no longer on screen, without
+  knowing which theme is active.
+
+The e2e matrix runs every spec in every theme listed in `playwright.config.ts`,
+and a contract test fails if any theme leaves a token undefined.
+
+### The legacy 8-bit theme
+
+Neon magenta on deep purple, glowing yellow type and pixel-cut frames: the
+palette and type of the builder's first design (commit `2a7e8dd`, before the
+Revit redesign in `283e834`), on today's layout. Pixelify Sans (OFL, bundled via
+`@fontsource`) stands in for the original Pixelcraft, which was loaded from a
+font CDN under an unclear licence.
+
+It shows the soundtrack the original shipped with ("The Return of the 8-bit
+Era", `src/assets/themes/legacy-8bit/music.mp3`, restored from `2a7e8dd`; its
+original file name follows Pixabay's naming, so confirm its licence if the
+site's use changes) as a compact play button and volume slider in the header:
+off on every visit, starting at 50% and remembered, and the file is only fetched
+the first time someone presses play. Animations are switched off for anyone who
+asks their system for reduced motion.
 
 ## Why the type table exists
 
@@ -211,5 +291,22 @@ console error, a failed request or a native dialog. Across all sizes it checks:
   no `__init__.py` / `entrypoint.py` / `.pyrevit`; broken extensions are refused
   with a list; save and load of a layout file round-trips.
 
-CI runs both suites before publishing, and uploads the Playwright report when a
-test fails.
+Every one of those runs twice: once per theme (`builder` keeps the bare project
+names, other themes run as `<size>-<theme>`), with the theme seeded into
+`localStorage` before the first page load. `theme.spec.ts` adds instant
+switching, persistence, `?theme=`, the token contract, the identical download
+and the soundtrack behaviour.
+
+`pnpm test:visual` compares full-page screenshots of six states (default,
+populated, modal, modal with Advanced, dialog, group editor) at every size in
+every theme, with zero tolerance: no pixel may differ, and no pixel may drift in
+colour (`threshold: 0`; Playwright's default allows a 0.2 colour distance per
+pixel, which is enough to hide a wrong colour). The `builder` baselines were taken
+from the UI before any theming work, so they prove the default theme did not
+drift. Font rendering differs by OS, so the baselines are macOS ones
+(`e2e/visual.spec.ts-snapshots/*-darwin.png`) and CI skips `@visual`; run it
+locally, and after an intended visual change, review the diffs in
+`test-results/` before accepting them with `--update-snapshots`.
+
+CI runs the unit tests and `pnpm test:e2e` before publishing, and uploads the
+Playwright report when a test fails.

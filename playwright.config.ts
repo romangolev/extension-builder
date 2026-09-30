@@ -16,6 +16,28 @@ export const VIEWPORTS = [
   { name: "phone-390", width: 390, height: 844 },
 ] as const;
 
+/**
+ * And once per theme. The default theme keeps the bare viewport names (and so
+ * its visual baselines); every other theme runs the same specs under
+ * "<viewport>-<theme>", with the theme saved in localStorage before the first
+ * page load, exactly as a returning visitor would have it.
+ */
+export const THEMES = ["builder", "legacy-8bit"] as const;
+
+function seededTheme(theme: string) {
+  return {
+    cookies: [],
+    origins: [
+      {
+        origin: `http://localhost:${PORT}`,
+        localStorage: [
+          { name: "pyrevit-extension-builder:prefs:v1", value: JSON.stringify({ theme }) },
+        ],
+      },
+    ],
+  };
+}
+
 export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
@@ -27,10 +49,17 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: VIEWPORTS.map(({ name, width, height }) => ({
-    name,
-    use: { ...devices["Desktop Chrome"], viewport: { width, height } },
-  })),
+  projects: THEMES.flatMap((theme) =>
+    VIEWPORTS.map(({ name, width, height }) => ({
+      name: theme === "builder" ? name : `${name}-${theme}`,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width, height },
+        theme,
+        storageState: seededTheme(theme),
+      },
+    })),
+  ),
   webServer: [
     {
       command: `pnpm build && pnpm preview --port ${PORT} --strictPort`,

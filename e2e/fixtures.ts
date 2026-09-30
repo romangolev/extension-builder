@@ -5,7 +5,10 @@ import { test as base, expect, type Locator, type Page } from "@playwright/test"
  * request, or a native alert/confirm/prompt. The app must only ever talk to
  * the user through its own dialogs.
  */
-export const test = base.extend<{ problems: string[] }>({
+export const test = base.extend<{ problems: string[]; theme: string }>({
+  // Which theme the project runs in. Set per project in playwright.config.ts,
+  // where the choice is seeded into localStorage before the page loads.
+  theme: ["builder", { option: true }],
   problems: [
     async ({ page }, use) => {
       const problems: string[] = [];
