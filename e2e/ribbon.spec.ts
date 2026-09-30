@@ -150,3 +150,63 @@ test.describe("history", () => {
     await expect(page.locator(".tab")).toHaveCount(2);
   });
 });
+
+test.describe("saved layouts", () => {
+  test.beforeEach(async ({ page }) => openApp(page));
+
+  test("Save keeps the ribbon in the browser and Load brings it back", async ({ page }) => {
+    await page.locator("#extensionName").fill("Alpha");
+    await page.locator("#addTab").click();
+    await expect(page.locator(".tab")).toHaveCount(2);
+
+    await page.locator("#saveConfig").click();
+    await acceptDialog(page);
+
+    await page.locator("#resetToolbar").click();
+    await acceptDialog(page, "Reset");
+    await expect(page.locator(".tab")).toHaveCount(1);
+
+    await page.locator("#loadConfig").click();
+    const row = page.locator('[data-save-name="Alpha"]');
+    await expect(row).toHaveCount(1);
+    await row.getByRole("button", { name: "Load" }).click();
+    await expect(page.locator(".tab")).toHaveCount(2);
+    await expect(page.locator("#extensionName")).toHaveValue("Alpha");
+  });
+
+  test("saving under the same name updates it; several saves are listed", async ({ page }) => {
+    await page.locator("#extensionName").fill("Alpha");
+    await page.locator("#saveConfig").click();
+    await acceptDialog(page);
+    await page.locator("#addTab").click();
+    await page.locator("#saveConfig").click();
+    await acceptDialog(page);
+    await page.locator("#extensionName").fill("Beta");
+    await page.locator("#saveConfig").click();
+    await acceptDialog(page);
+
+    await page.locator("#loadConfig").click();
+    await expect(page.locator(".saved-row")).toHaveCount(2);
+  });
+
+  test("a save can be deleted, and an empty list explains itself", async ({ page }) => {
+    await page.locator("#loadConfig").click();
+    await expect(page.getByText("Nothing saved yet")).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await page.locator("#saveConfig").click();
+    await acceptDialog(page);
+    await page.locator("#loadConfig").click();
+    await page.getByRole("button", { name: /Delete My Extension/ }).click();
+    await acceptDialog(page, "Delete");
+    await expect(page.getByText("Nothing saved yet")).toBeVisible();
+  });
+
+  test("saves survive a reload", async ({ page }) => {
+    await page.locator("#saveConfig").click();
+    await acceptDialog(page);
+    await page.reload();
+    await page.locator("#loadConfig").click();
+    await expect(page.locator(".saved-row")).toHaveCount(1);
+  });
+});

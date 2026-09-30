@@ -7,6 +7,7 @@ import { Header } from "./components/Header";
 import { IconsContext } from "./components/IconsContext";
 import { Ribbon } from "./components/Ribbon";
 import { GroupEditor } from "./components/RibbonItems";
+import { SavedLayouts } from "./components/SavedLayouts";
 import { DndProvider } from "./dnd/DndProvider";
 import { useDefaultIcons } from "./state/defaultIcons";
 import { useStore } from "./state/store";
@@ -43,6 +44,7 @@ export function App() {
         <GroupEditor />
       </DndProvider>
       <ElementModal />
+      <SavedLayouts />
       <DialogHost />
     </IconsContext.Provider>
   );

@@ -1983,3 +1983,53 @@ input[type="file"] {
     margin-left: 4px;
   }
 }
+
+/* ===== SAVED LAYOUTS ===== */
+.saved-hint {
+  margin: 4px 0 12px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.saved-empty {
+  padding: 18px 4px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.saved-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.saved-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+}
+
+.saved-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.saved-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saved-meta {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}

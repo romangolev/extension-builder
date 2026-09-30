@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import logoUrl from "../assets/logo.svg";
-import { parseLayout, snapshot } from "../domain/layoutFile";
-import { sanitizeFileName } from "../domain/templates";
 import { validate } from "../domain/tree";
 import { buildZip, downloadBlob } from "../domain/zip";
 import { loadDefaultIcons } from "../state/defaultIcons";
 import { showAlert, showConfirm } from "../state/dialogs";
 import { clearDraft } from "../state/persistence";
+import { useSaves } from "../state/saves";
 import { layoutOf, useStore } from "../state/store";
 import { HistoryControls } from "./HistoryControls";
 import { MusicControl } from "./MusicControl";
@@ -23,26 +22,22 @@ function reportProblems(problems: string[]) {
 }
 
 function saveLayout() {
-  const layout = layoutOf(useStore.getState());
-  const blob = new Blob([JSON.stringify(snapshot(layout), null, 2)], { type: "application/json" });
-  downloadBlob(blob, `${sanitizeFileName(layout.extensionName)}_layout.json`);
+  const { error, replaced } = useSaves.getState().save(layoutOf(useStore.getState()));
+  const name = useStore.getState().extensionName.trim() || "Untitled";
+  if (error) {
+    void showAlert(error, { title: "Could not save the layout" });
+    return;
+  }
+  void showAlert(
+    replaced
+      ? `"${name}" was updated. Press Load layout to open it later.`
+      : `"${name}" was kept in this browser. Press Load layout to open it later.`,
+    { title: "Layout saved" },
+  );
 }
 
 function loadLayout() {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".json,application/json";
-  input.addEventListener("change", async () => {
-    const file = input.files?.[0];
-    if (!file) return;
-    try {
-      useStore.getState().loadLayout(parseLayout(await file.text()));
-      void showAlert("Your layout replaced the current ribbon.", { title: "Layout loaded" });
-    } catch (error) {
-      void showAlert((error as Error).message, { title: "Could not load that layout" });
-    }
-  });
-  input.click();
+  useSaves.getState().openManager();
 }
 
 async function resetLayout() {

@@ -96,32 +96,36 @@ test.describe("export", () => {
     await acceptDialog(page);
   });
 
-  test("saves a layout file and loads it back", async ({ page }) => {
+  test("exports a saved layout to a file and imports it back", async ({ page }) => {
     await addStack(page);
     await page.locator("#extensionName").fill("Round Trip");
-
-    const downloadPromise = page.waitForEvent("download");
     await page.locator("#saveConfig").click();
+    await acceptDialog(page);
+
+    await page.locator("#loadConfig").click();
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export Round Trip to a file" }).click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toBe("Round Trip_layout.json");
     const saved = await download.path();
+    await page.keyboard.press("Escape");
 
     await page.locator("#resetToolbar").click();
     await acceptDialog(page, "Reset");
     await expect(page.locator(".stack")).toHaveCount(0);
 
-    const chooserPromise = page.waitForEvent("filechooser");
     await page.locator("#loadConfig").click();
+    const chooserPromise = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: "Import from file" }).click();
     await (await chooserPromise).setFiles(saved);
-    await expect(appDialog(page)).toContainText("Layout loaded");
-    await acceptDialog(page);
     await expect(page.locator("#extensionName")).toHaveValue("Round Trip");
     await expect(page.locator(".stack")).toHaveCount(1);
   });
 
   test("a file that is not a layout is refused in a dialog", async ({ page }) => {
-    const chooserPromise = page.waitForEvent("filechooser");
     await page.locator("#loadConfig").click();
+    const chooserPromise = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: "Import from file" }).click();
     await (await chooserPromise).setFiles({
       name: "nope.json",
       mimeType: "application/json",
@@ -129,6 +133,6 @@ test.describe("export", () => {
     });
     await expect(appDialog(page)).toContainText("That file is not valid JSON.");
     await acceptDialog(page);
-    await expect(page.locator(".panel")).toHaveCount(1);
+    await expect(page.locator(".panel")).toHaveCount(0);
   });
 });
