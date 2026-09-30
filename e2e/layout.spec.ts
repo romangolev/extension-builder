@@ -104,6 +104,25 @@ test.describe("layout", () => {
     expect(Math.abs(solo.y - firstRow.y)).toBeLessThanOrEqual(1);
   });
 
+  test("the open folder preview is wide enough to read every line", async ({ page }) => {
+    await addStack(page);
+    await addGroup(page, "Tools");
+    const closed = await box(page, ".preview-panel");
+    await page.locator("#previewDisclosure summary").click();
+    await expect(page.locator("#previewSummaryMeta")).toContainText("folders");
+
+    const fits = (sel: string) =>
+      page.locator(sel).evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+    expect(await fits("#folderPreview"), "tree lines are cut off").toBe(true);
+    expect(await fits("#previewSummaryMeta"), "the folder/file count is cut off").toBe(true);
+
+    const open = await box(page, ".preview-panel");
+    expect(open.width).toBeGreaterThanOrEqual(closed.width - 1);
+    const ribbon = await box(page, ".ribbon-container");
+    expect(overlaps(ribbon, open)).toBe(false);
+    await expectNoSidewaysScroll(page);
+  });
+
   test("the folder preview scrolls inside its own panel", async ({ page }, info) => {
     await addStack(page);
     await addGroup(page, "Tools");

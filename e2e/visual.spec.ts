@@ -11,10 +11,12 @@ test.describe("@visual", () => {
   const shot = (page: Page, name: string) =>
     expect(page).toHaveScreenshot(`${name}.png`, {
       fullPage: true,
-      // Both at zero: maxDiffPixels alone still lets every pixel drift by the
-      // default colour threshold (0.2), which hides a wrong colour entirely.
+      // No pixel may differ beyond a hair of colour. Playwright's default
+      // threshold (0.2) is wide enough to pass a brown ribbon for a purple
+      // one; 0.02 only absorbs the odd one-level antialiasing wobble under a
+      // translucent overlay.
       maxDiffPixels: 0,
-      threshold: 0,
+      threshold: 0.02,
     });
 
   test.beforeEach(async ({ page }) => {

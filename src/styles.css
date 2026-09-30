@@ -388,6 +388,20 @@ h1 {
   display: flex;
 }
 
+/* Open, the tree gets the width its longest line needs, so file names are
+   readable without scrolling sideways: never narrower than when closed, and
+   never more than half the workspace, so the ribbon keeps at least as much.
+   A deeper tree than that still scrolls inside the panel. Phones stack the
+   two columns instead (see NARROW SCREENS). */
+@media (min-width: 701px) {
+  .preview-panel:has(.preview-disclosure[open]) {
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: max(260px, 20%);
+    max-width: 50%;
+  }
+}
+
 .preview-panel .pixel-border {
   width: 100%;
   display: flex;

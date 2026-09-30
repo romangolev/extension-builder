@@ -5,3 +5,7 @@ dist/
 .playwright-mcp/
 test-results/
 playwright-report/
+visual.spec.ts-snaphots/
+
+# Visual baselines are local to each machine and OS; never committed.
+e2e/*-snapshots/

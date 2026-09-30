@@ -13,7 +13,8 @@ pnpm lint         # biome check
 pnpm typecheck    # tsc
 pnpm test         # vitest unit + component tests
 pnpm test:e2e     # playwright, every spec at six screen sizes in every theme
-pnpm test:visual  # pixel baselines per theme and size (macOS; see Checks)
+pnpm test:visual:record  # record local pixel baselines (see Checks)
+pnpm test:visual  # compare against them
 pnpm build        # production build into dist/
 ```
 
@@ -50,9 +51,12 @@ The draft is written from a single store subscription
 ## The folder preview
 
 The generated tree sits in a collapsible panel **beside** the ribbon, not below
-it: the ribbon takes ~80% of the width and the preview ~20%, and the two columns
+it. Closed, it takes ~20% of the width (at least 260px). Open, it widens to fit
+its longest line, so file names and the folder/file count are readable without
+scrolling sideways — up to half the workspace, so the ribbon always keeps at
+least as much; a deeper tree than that scrolls inside the panel. The two columns
 are `align-items: flex-start` so expanding a deep tree does not stretch the
-toolbar. It is a native `<details>`, so it toggles and is keyboard accessible
+toolbar. On phones the preview sits under the ribbon at full width. It is a native `<details>`, so it toggles and is keyboard accessible
 without any JavaScript, and it starts collapsed — the ribbon is what you work in
 and the tree is a reference. Whether it is open is remembered separately from the
 draft (`pyrevit-extension-builder:prefs:v1`), because it is a view preference
@@ -299,14 +303,21 @@ and the soundtrack behaviour.
 
 `pnpm test:visual` compares full-page screenshots of six states (default,
 populated, modal, modal with Advanced, dialog, group editor) at every size in
-every theme, with zero tolerance: no pixel may differ, and no pixel may drift in
-colour (`threshold: 0`; Playwright's default allows a 0.2 colour distance per
-pixel, which is enough to hide a wrong colour). The `builder` baselines were taken
-from the UI before any theming work, so they prove the default theme did not
-drift. Font rendering differs by OS, so the baselines are macOS ones
-(`e2e/visual.spec.ts-snapshots/*-darwin.png`) and CI skips `@visual`; run it
-locally, and after an intended visual change, review the diffs in
-`test-results/` before accepting them with `--update-snapshots`.
+every theme. No pixel may differ, and colour may drift by at most a hair
+(`threshold: 0.02`; Playwright's default of 0.2 is wide enough to pass a brown
+ribbon for a purple one).
+
+The baselines are **not committed** (`e2e/*-snapshots/` is gitignored): font
+rendering differs by OS and machine, so a baseline only means something on the
+machine that recorded it. It is a before/after check for a change you are about
+to make:
+
+1. on the code you trust, `pnpm test:visual:record` (records every baseline);
+2. make the change, then `pnpm test:visual`;
+3. review any diffs in `test-results/` and, if they are intended, record again.
+
+A baseline that does not exist yet is recorded on first run, and that run
+reports it as a failure; the next run compares against it. CI skips `@visual`.
 
 CI runs the unit tests and `pnpm test:e2e` before publishing, and uploads the
 Playwright report when a test fails.
