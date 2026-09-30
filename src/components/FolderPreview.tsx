@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { buildFolderStructure, countNodes, formatFolderStructure, validate } from "../domain/tree";
 import { readPref, writePref } from "../state/persistence";
 import { useStore } from "../state/store";
@@ -17,6 +17,7 @@ export function FolderPreview() {
   const tabs = useStore((s) => s.tabs);
   const panels = useStore((s) => s.panels);
   const elements = useStore((s) => s.elements);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(() => readPref("previewOpen", false));
 
   const { text, meta } = useMemo(() => {
@@ -30,8 +31,34 @@ export function FolderPreview() {
     };
   }, [extensionName, tabs, panels, elements]);
 
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const fitToWindow = () => {
+      const stacked = window.matchMedia?.("(max-width: 700px)").matches;
+      const room = stacked ? 0 : (panel.parentElement?.clientHeight ?? 0);
+      if (!room) {
+        panel.style.removeProperty("--preview-max");
+        panel.style.removeProperty("--preview-tree-max");
+        return;
+      }
+      const heading = panel.querySelector("summary")?.getBoundingClientRect().height ?? 0;
+      const frame = panel.offsetHeight - panel.clientHeight;
+      panel.style.setProperty("--preview-max", `${Math.floor(room)}px`);
+      panel.style.setProperty("--preview-tree-max", `${Math.floor(room - heading - frame)}px`);
+    };
+    fitToWindow();
+    const observer = new ResizeObserver(fitToWindow);
+    if (panel.parentElement) observer.observe(panel.parentElement);
+    window.addEventListener("resize", fitToWindow);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", fitToWindow);
+    };
+  }, []);
+
   return (
-    <div className="preview-panel surface">
+    <div className="preview-panel surface" ref={panelRef}>
       <details
         className="preview-disclosure"
         id="previewDisclosure"

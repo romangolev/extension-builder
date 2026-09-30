@@ -368,11 +368,55 @@ h1 {
   align-items: stretch;
 }
 
+/* On a screen wide enough for two columns the app is exactly one window
+   tall: the workspace takes what the header leaves, and the folder preview
+   (capped by FolderPreview to the workspace height) scrolls its own tree. The
+   page itself never scrolls. Only a window too short to use (under 560px)
+   falls back to scrolling. Phones stack the columns and scroll the page
+   (see NARROW SCREENS). */
+@media (min-width: 701px) {
+  html,
+  body {
+    height: 100%;
+  }
+
+  #root {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 560px;
+  }
+
+  #root > header,
+  .extension-name {
+    flex: 0 0 auto;
+  }
+
+  .extension-name {
+    width: 100%;
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .workspace {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-bottom: 0;
+  }
+}
+
 .preview-panel {
+  --preview-max: 100%;
   flex: 0 0 20%;
   min-width: 260px;
   max-width: 20%;
   display: flex;
+  max-height: var(--preview-max);
 }
 
 /* Open, the tree gets the width its longest line needs, so file names are
@@ -393,11 +437,15 @@ h1 {
   width: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  max-height: calc(var(--preview-max) - 2 * var(--frame-width, 0px));
 }
 
 .preview-panel .preview-content {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
+  max-height: var(--preview-tree-max, calc(100dvh - 300px));
 }
 
 .ribbon {
@@ -1198,9 +1246,6 @@ h1 {
   color: var(--text-primary);
   padding: 12px 14px;
   white-space: pre;
-  /* The tree scrolls inside its own panel rather than growing the page, so a
-     deep extension does not push everything else down. */
-  max-height: 45vh;
   overflow: auto;
   width: 100%;
 }
@@ -1993,6 +2038,15 @@ input[type="file"] {
     width: 100%;
     min-width: 0;
     max-width: 100%;
+    max-height: none;
+  }
+
+  .preview-panel .preview-disclosure {
+    max-height: none;
+  }
+
+  .preview-panel .preview-content {
+    max-height: 45vh;
   }
 
   .tabs {

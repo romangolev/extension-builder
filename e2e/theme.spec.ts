@@ -145,6 +145,8 @@ test.describe("themes", () => {
         // The switcher names the active theme; that label is the one
         // intended difference.
         root.querySelector("#themeSwitcher")?.remove();
+        // The preview's measured height is layout, and a theme may move it.
+        root.querySelector(".preview-panel")?.removeAttribute("style");
         return root.outerHTML;
       });
 

@@ -133,4 +133,24 @@ test.describe("layout", () => {
     expect(preview.width).toBeLessThanOrEqual(viewport.width);
     await info.attach("layout", { body: await page.screenshot(), contentType: "image/png" });
   });
+
+  test("a long folder tree fits the window and scrolls inside the panel", async ({ page }) => {
+    await page.locator("#previewDisclosure summary").click();
+    for (let i = 0; i < 8; i++) await addStack(page);
+    const viewport = page.viewportSize();
+    if (!viewport) throw new Error("no viewport");
+    const narrow = viewport.width <= 700;
+
+    const panel = await box(page, ".preview-panel");
+    if (!narrow) {
+      expect(panel.y + panel.height).toBeLessThanOrEqual(viewport.height);
+      const pageScrolls = await page.evaluate(
+        () => document.documentElement.scrollHeight > window.innerHeight + 1,
+      );
+      expect(pageScrolls, "the page scrolls vertically").toBe(false);
+    }
+    const tree = page.locator("#folderPreview");
+    expect(await tree.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+    await expectNoSidewaysScroll(page);
+  });
 });
