@@ -156,25 +156,33 @@ test.describe("themes", () => {
 
   test("switching theme keeps the layout", async ({ page }) => {
     await addStack(page);
+    // Regions the page layout sizes: they must keep both place and size.
+    const fixed = [".extension-name", ".ribbon-container", ".preview-panel"];
+    // Boxes sized by their own text (a panel is as wide as its footer): a
+    // wider typeface may widen them - by how much depends on the fonts the
+    // machine has - but they must not move.
+    const textSized = [".logo", ".panel"];
     const boxes = () =>
-      page.evaluate(() =>
-        [".logo", ".extension-name", ".ribbon-container", ".preview-panel", ".panel"].map((sel) => {
-          const r = document.querySelector(sel)?.getBoundingClientRect();
-          return { sel, x: r?.x ?? -1, y: r?.y ?? -1, w: r?.width ?? -1 };
-        }),
+      page.evaluate(
+        (sels) =>
+          sels.map((sel) => {
+            const r = document.querySelector(sel)?.getBoundingClientRect();
+            return { sel, x: r?.x ?? -1, y: r?.y ?? -1, w: r?.width ?? -1 };
+          }),
+        [...fixed, ...textSized],
       );
 
     await pickTheme(page, "builder");
     const plain = await boxes();
     await pickTheme(page, "legacy-8bit");
     const themed = await boxes();
-    // A different typeface moves text by a few pixels; nothing may move by
-    // more than that, and nothing may swap places.
     plain.forEach((a, i) => {
       const b = themed[i];
-      expect(Math.abs(a.x - (b?.x ?? 0)), `${a.sel} x`).toBeLessThanOrEqual(12);
-      expect(Math.abs(a.y - (b?.y ?? 0)), `${a.sel} y`).toBeLessThanOrEqual(12);
-      expect(Math.abs(a.w - (b?.w ?? 0)), `${a.sel} width`).toBeLessThanOrEqual(24);
+      expect(Math.abs(a.x - (b?.x ?? 0)), `${a.sel} moved sideways`).toBeLessThanOrEqual(2);
+      expect(Math.abs(a.y - (b?.y ?? 0)), `${a.sel} moved down`).toBeLessThanOrEqual(12);
+      if (fixed.includes(a.sel)) {
+        expect(Math.abs(a.w - (b?.w ?? 0)), `${a.sel} changed width`).toBeLessThanOrEqual(2);
+      }
     });
   });
 
