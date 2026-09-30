@@ -96,6 +96,25 @@
     animation: legacy-glow 8s infinite;
   }
 
+  & .control {
+    border-color: var(--legacy-pink);
+    border-radius: 0;
+    background-color: var(--legacy-purple);
+    color: var(--legacy-pink-text);
+    box-shadow: none;
+    clip-path: none;
+    transform: none;
+  }
+
+  & .control:hover {
+    background-color: var(--legacy-input);
+  }
+
+  & .control-primary {
+    background-color: var(--legacy-pink);
+    color: var(--legacy-yellow);
+  }
+
   & .toolbar-action {
     border-color: var(--legacy-pink);
     border-radius: 0;
@@ -183,6 +202,7 @@
   }
 
   & #extensionName {
+    clip-path: none;
     border-color: var(--legacy-pink);
     background-color: var(--legacy-purple);
     color: var(--legacy-pink-text);
@@ -331,12 +351,18 @@
   }
 
   /* ---- Folder preview: the pixel-cut glowing frame ---- */
-  & .pixel-border {
-    filter: drop-shadow(15px 0 20px rgba(236, 72, 153, 0.6));
+  & .surface {
+    border: 4px solid #ec4899;
+    border-radius: 0;
+    clip-path: none;
+    background-color: var(--legacy-purple-2);
+    box-shadow: 15px 0 20px rgba(236, 72, 153, 0.6);
+    color: var(--legacy-pink-text);
   }
 
-  & .pixel-border::before {
-    background: linear-gradient(to bottom right, #ec4899, #9d174d);
+  & .surface-header {
+    border-bottom: 0;
+    letter-spacing: normal;
   }
 
   & .preview-disclosure > summary {

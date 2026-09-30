@@ -73,7 +73,7 @@ test.describe("layout", () => {
 
   test("the tab strip belongs to the ribbon and its + sits inside it", async ({ page }) => {
     const strip = await box(page, ".tabs-container");
-    const ribbon = await box(page, ".ribbon-container");
+    const ribbon = await box(page, ".ribbon");
     const add = await box(page, "#addTab");
     expect(Math.abs(strip.x + strip.width - (ribbon.x + ribbon.width))).toBeLessThanOrEqual(1);
     expect(add.x + add.width).toBeLessThanOrEqual(strip.x + strip.width);

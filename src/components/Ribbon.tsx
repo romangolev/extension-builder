@@ -39,7 +39,7 @@ function TabStrip() {
       </div>
       <button
         type="button"
-        className="add-button add-tab-inline"
+        className="add-button add-tab-inline control"
         id="addTab"
         title="Add a tab"
         aria-label="Add a tab"
@@ -101,7 +101,7 @@ function RibbonPanel({ panelId }: { panelId: string }) {
             <button
               key={a.label}
               type="button"
-              className="add-button"
+              className="add-button control"
               title={a.title}
               onClick={a.run}
             >
@@ -111,7 +111,7 @@ function RibbonPanel({ panelId }: { panelId: string }) {
         </div>
         <button
           type="button"
-          className="add-button add-panel-inline"
+          className="add-button add-panel-inline control"
           title="Add another panel to this tab"
           aria-label="Add another panel to this tab"
           onClick={(e) => {
@@ -137,7 +137,7 @@ const NO_PANELS: string[] = [];
 export function Ribbon() {
   const panels = useStore((s) => s.tabs[s.activeTabId]?.panels ?? NO_PANELS);
   return (
-    <div className="ribbon-container">
+    <div className="ribbon-container surface">
       <TabStrip />
       <div className="ribbon" id="ribbonContainer">
         {panels.map((panelId) => (

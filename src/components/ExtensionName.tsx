@@ -26,7 +26,7 @@ export function ExtensionName() {
       </label>
       <div className="extension-name-row">
         <input
-          className="glowing-text"
+          className="glowing-text field"
           type="text"
           id="extensionName"
           value={name}

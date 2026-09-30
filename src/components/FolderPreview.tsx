@@ -31,30 +31,28 @@ export function FolderPreview() {
   }, [extensionName, tabs, panels, elements]);
 
   return (
-    <div className="preview-panel pixel-container">
-      <div className="pixel-border">
-        <details
-          className="preview-disclosure"
-          id="previewDisclosure"
-          open={open}
-          onToggle={(e) => {
-            const next = e.currentTarget.open;
-            if (next === open) return;
-            setOpen(next);
-            writePref("previewOpen", next);
-          }}
-        >
-          <summary>
-            <span className="preview-title">Folder preview</span>
-            <span className="preview-summary-meta" id="previewSummaryMeta">
-              {open ? meta : ""}
-            </span>
-          </summary>
-          <div className="preview-content" id="folderPreview">
-            {text}
-          </div>
-        </details>
-      </div>
+    <div className="preview-panel surface">
+      <details
+        className="preview-disclosure"
+        id="previewDisclosure"
+        open={open}
+        onToggle={(e) => {
+          const next = e.currentTarget.open;
+          if (next === open) return;
+          setOpen(next);
+          writePref("previewOpen", next);
+        }}
+      >
+        <summary className="surface-header">
+          <span className="preview-title">Folder preview</span>
+          <span className="preview-summary-meta" id="previewSummaryMeta">
+            {open ? meta : ""}
+          </span>
+        </summary>
+        <div className="preview-content surface-body" id="folderPreview">
+          {text}
+        </div>
+      </details>
     </div>
   );
 }

@@ -241,23 +241,10 @@ h1 {
 #extensionName {
   width: 100%;
   min-width: 220px;
-  padding: 6px 8px;
-  color: var(--text-primary);
-  border: 1px solid transparent;
-  border-radius: var(--border-radius-sm);
+  padding: 6px 10px;
   font-size: 1.05rem;
   text-align: left;
   margin: 0;
-}
-
-#extensionName:hover {
-  border-color: var(--border-subtle);
-}
-
-#extensionName:focus {
-  outline: none;
-  border-color: var(--accent);
-  background-color: var(--surface-sunken);
 }
 
 /* ===== TABS SECTION ===== */
@@ -402,11 +389,6 @@ h1 {
   }
 }
 
-.preview-panel .pixel-border {
-  width: 100%;
-  display: flex;
-}
-
 .preview-panel .preview-disclosure {
   width: 100%;
   display: flex;
@@ -537,12 +519,6 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
-  background-color: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
 }
 
 .add-panel-inline::before,
@@ -573,14 +549,7 @@ h1 {
 
 .add-panel-inline:hover,
 .add-tab-inline:hover {
-  color: #ffffff;
-  background-color: var(--accent-strong);
-  border-color: var(--accent-strong);
-}
-
-.add-panel-inline:active,
-.add-tab-inline:active {
-  transform: scale(0.94);
+  color: var(--accent);
 }
 
 .add-tab-inline {
@@ -601,14 +570,10 @@ h1 {
   /* No opacity here: at 0.75 these fell to 4.33:1. Secondary text on the
      ribbon is 7.0:1, so they stay legible and still read as chrome. */
   color: var(--text-secondary);
-  border-color: var(--border-subtle);
-  background-color: var(--surface-raised);
 }
 
 .panel-controls .add-button:hover {
   color: var(--accent);
-  border-color: var(--accent);
-  background-color: var(--surface-hover);
 }
 
 /* --- Item: icon above label, the Revit large button ---
@@ -1151,16 +1116,9 @@ h1 {
 }
 
 .preview-disclosure > summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
   cursor: pointer;
   user-select: none;
   list-style: none;
-  color: var(--text-primary);
-  background-color: var(--surface-raised);
-  border-radius: var(--border-radius-sm);
 }
 
 .preview-disclosure > summary::-webkit-details-marker {
@@ -1177,15 +1135,13 @@ h1 {
 }
 
 .preview-title {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .preview-summary-meta {
-  font-size: 0.66rem;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-secondary);
   font-family: var(--font-mono);
   white-space: nowrap;
@@ -1210,10 +1166,6 @@ h1 {
   transform: rotate(90deg);
 }
 
-.preview-disclosure[open] > summary {
-  border-bottom: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
-}
 
 .preview-content {
   font-family: var(--font-mono);
@@ -1221,19 +1173,12 @@ h1 {
   font-size: 0.78rem;
   line-height: 1.5;
   color: var(--text-primary);
-  background-color: var(--surface-ribbon);
-  padding: 9px 12px;
+  padding: 12px 14px;
   white-space: pre;
   /* The tree scrolls inside its own panel rather than growing the page, so a
      deep extension does not push everything else down. */
   max-height: 45vh;
   overflow: auto;
-  width: 100%;
-  border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
-}
-
-/* Special override for the extension preview section */
-main + .pixel-container .pixel-border {
   width: 100%;
 }
 

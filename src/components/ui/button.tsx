@@ -16,17 +16,15 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         toolbar:
-          "toolbar-action rounded-sm border border-border bg-card font-normal text-foreground text-[0.66rem] tracking-[0.5px] uppercase transition-colors duration-[120ms] hover:border-ring hover:bg-accent hover:text-ring focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:border-border focus-visible:outline-ring focus-visible:ring-0",
-        dialog:
-          "rounded-sm border border-border bg-secondary font-normal text-foreground text-[0.8rem] hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:ring-0",
-        "dialog-primary":
-          "rounded-sm border border-primary bg-primary font-normal text-primary-foreground text-[0.8rem] hover:bg-[var(--accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:ring-0",
+          "toolbar-action control rounded-[var(--control-radius)] text-[0.66rem] font-semibold tracking-[0.5px] uppercase",
+        dialog: "control rounded-[var(--control-radius)] text-[0.8rem]",
+        "dialog-primary": "control rounded-[var(--control-radius)] control-primary text-[0.8rem]",
         "dialog-danger":
-          "rounded-sm border border-destructive bg-destructive font-normal text-destructive-foreground text-[0.8rem] hover:bg-[var(--delete-btn-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:ring-0",
+          "control rounded-[var(--control-radius)] control-primary text-[0.8rem] bg-[var(--danger-fill)] border-[var(--danger)] hover:bg-[var(--delete-btn-hover)]",
         "toolbar-primary":
-          "toolbar-action toolbar-action-primary rounded-sm border border-primary bg-primary font-normal text-primary-foreground text-[0.66rem] tracking-[0.5px] uppercase transition-colors duration-[120ms] hover:border-[var(--accent-hover)] hover:bg-[var(--accent-hover)] focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring focus-visible:ring-0",
+          "toolbar-action toolbar-action-primary control rounded-[var(--control-radius)] control-primary text-[0.66rem] font-semibold tracking-[0.5px] uppercase",
         "toolbar-danger":
-          "toolbar-action toolbar-action-danger rounded-sm border border-destructive bg-card font-normal text-[var(--danger)] text-[0.66rem] tracking-[0.5px] uppercase transition-colors duration-[120ms] hover:bg-destructive hover:text-destructive-foreground focus-visible:border-destructive focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring focus-visible:ring-0",
+          "toolbar-action toolbar-action-danger control rounded-[var(--control-radius)] control-danger text-[0.66rem] font-semibold tracking-[0.5px] uppercase",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
