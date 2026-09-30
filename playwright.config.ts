@@ -31,10 +31,19 @@ export default defineConfig({
     name,
     use: { ...devices["Desktop Chrome"], viewport: { width, height } },
   })),
-  webServer: {
-    command: `pnpm build && pnpm preview --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: `pnpm build && pnpm preview --port ${PORT} --strictPort`,
+      url: `http://localhost:${PORT}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
+      // dist/ exists once the first server has built it; Playwright starts
+      // the servers in order and waits for each URL before the next.
+      command: "node e2e/serve-subpath.mjs 4175",
+      url: "http://localhost:4175/extension-builder/",
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });
