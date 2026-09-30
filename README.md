@@ -2,9 +2,29 @@
 
 A tool to create your pyRevit extension with no knowledge of programming.
 
-Static site — plain HTML, CSS and JavaScript. No server, no build step, no
-dependencies at runtime (JSZip comes from a CDN). Open `index.html` or serve
-the folder with any static host.
+React + TypeScript single-page app, built with Vite, linted and formatted with
+Biome, tested with Vitest, managed with pnpm.
+
+```sh
+pnpm install
+pnpm dev          # local dev server
+pnpm lint         # biome check
+pnpm typecheck    # tsc
+pnpm test         # vitest
+pnpm build        # production build into dist/
+```
+
+## Deploying
+
+`main` holds the source. Every push to `main` runs
+`.github/workflows/deploy.yml`, which lints, type-checks, tests and builds, then
+force-pushes the contents of `dist/` as a single commit to the **`build`**
+branch. GitHub Pages serves the `build` branch root, and `public/CNAME` is copied
+into every build, so the custom domain stays attached.
+
+Vite fingerprints every asset filename (`index-<hash>.js`), so a fresh
+`index.html` can never be paired with a stale CSS or JS file from the Pages cache
+— the manual `?v=` token the static version needed is gone.
 
 ## Your work is kept
 
@@ -13,9 +33,8 @@ reload does not lose it. **RESET** in the header discards it and returns to a
 single empty tab, panel and command. This is separate from SAVE/LOAD LAYOUT,
 which is the explicit file you keep.
 
-The draft is written from `FolderStructure.updateFolderPreview()` because every
-mutation already passes through it — one hook rather than a dozen call sites
-that would eventually miss one.
+The draft is written from a single store subscription
+(`src/state/persistence.ts`), so no action can forget to persist.
 
 ## The folder preview
 
@@ -43,8 +62,7 @@ bottom. Item sizing follows the same rules:
 | pulldown / split | full-height large button, 48px icon | below the icon, with a chevron |
 
 A stack is top-aligned rather than centred, so its first row's icon lands on the
-same line as a full-height command's icon; the geometry is asserted in
-`verify-browser.js` (`firstIcon` within 1px of `solo`). The one-third
+same line as a full-height command's icon. The one-third
 relationship is a single custom property on `.button`, so the two numbers cannot
 drift apart. The ribbon's height is sized to its tallest item rather than fixed,
 so there is no dead space under a stack's last row or a group's chevron.
@@ -69,18 +87,14 @@ area below is near-white, and the active tab is pulled up over the strip's rule
 so it reads as dropping into the panels; there is no underline marking the
 selection, because the interrupted rule already does that. The strip's top
 corners are square: rounding them clipped its own background and let the darker
-app background show through as a grey wedge at the top left. `verify-browser.js`
-asserts the strip is flush with the ribbon's right edge, does not overlap the
-preview, that the `+` is inset at the far end, that the active tab matches the
-panel surface while reaching the rule an unfocused tab stops short of, and that
-no app-background grey appears in the strip's corners.
+app background show through as a grey wedge at the top left.
 
 Delete is a small red cross in the top-right of the thing it removes. It
 appears on hover, and its tooltip names the command and its bundle type.
 
 ## Why the type table exists
 
-`bundle-types.js` is the single source of truth for every bundle type. Each row
+`src/domain/bundleTypes.ts` is the single source of truth for every bundle type. Each row
 carries the folder postfix, the files it emits, its nesting whitelist and its
 `bundle.yaml` keys. Everything else — the modal picker, the folder tree, the
 renderer, drag-and-drop rules, validation — reads from it.
@@ -91,7 +105,7 @@ absent from the ribbon with no error anywhere
 (`dev/pyRevitLoader/pyRevitExtensionParser/ExtensionParser.cs:1032-1035`).
 Scattering that list across template, renderer and export code is how a type
 ends up half-implemented, so there is now exactly one place it can go wrong,
-and `verify.js` asserts it against pyRevit's own parser enum.
+and `src/domain/domain.test.ts` asserts it against pyRevit's own parser enum.
 
 Supported types, all 13 element postfixes pyRevit understands:
 
@@ -135,37 +149,12 @@ that sanitise to the same folder, a content button with no `.rfa`.
 
 ## Checks
 
-Not required to run the site.
+`pnpm test` covers what `verify.js` used to: the postfix table against pyRevit's
+parser enum, the sanitiser, YAML quoting, every bundle type's files, nesting
+rules, the validator and the v1→v2 layout migration. It also exercises the store
+(add, move, delete, type change) and renders the app to click through creating a
+command and a stack.
 
-```sh
-node verify.js           # tree, YAML, sanitiser, validator, v1->v2 migration
-node verify-dom.js       # every DOM/CSS reference resolves; no dead markup
-npm i --no-save puppeteer-core jszip
-node serve.js 8777 &
-node verify-browser.js   # drives the real page, builds a ZIP, inspects it
-node verify-contrast.js  # WCAG contrast of every rendered text, incl. ::after
-node measure.js          # modal overflow and page box sizes, per viewport
-```
-
-`verify-browser.js` asserts the generated archive contains no folder whose
-suffix pyRevit does not know, that icons carry real image bytes, and that no
-`__init__.py`, `entrypoint.py` or `.pyrevit` is emitted — none of which pyRevit
-expects or produces. It also asserts the modal, its type picker and the Advanced
-section need no scrollbar at 1400x1050, 1280x800 or 1024x768, with Advanced
-either collapsed or open, and that a draft survives a reload while RESET does
-not.
-
-`verify-dom.js` also asserts that every local asset in `index.html` is
-cache-busted with a single shared `?v=` token. This matters more than it looks:
-GitHub Pages serves these files with `Cache-Control: max-age=600`, so without a
-version query a browser can pair a **fresh** `index.html` with a **stale**
-`styles.css` or `ui-elements.js` and the published site renders differently from
-the working copy for no visible reason. **Bump the token whenever you change a
-local CSS or JS file** — the check fails loudly if you forget.
-
-`verify-contrast.js` walks every rendered text — including text drawn by
-`::after` and `::placeholder`, which a naive check misses entirely — resolves
-its effective foreground against the composited background of its ancestors,
-and compares to WCAG AA. It runs the page at rest and on hover, with the modal
-open and closed. It is strict on purpose: the first version of it missed three
-real failures.
+The old Puppeteer checks (`verify-browser.js`, `verify-contrast.js`,
+`measure.js`) drove the pre-React DOM and are not ported yet; they are in git
+history if you want to bring them back as Playwright tests.
