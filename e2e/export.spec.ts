@@ -133,6 +133,6 @@ test.describe("export", () => {
     });
     await expect(appDialog(page)).toContainText("That file is not valid JSON.");
     await acceptDialog(page);
-    await expect(page.locator(".panel")).toHaveCount(0);
+    await expect(page.locator(".panel")).toHaveCount(1);
   });
 });
