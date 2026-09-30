@@ -9,6 +9,7 @@ import { loadDefaultIcons } from "../state/defaultIcons";
 import { showAlert, showConfirm } from "../state/dialogs";
 import { clearDraft } from "../state/persistence";
 import { layoutOf, useStore } from "../state/store";
+import { HistoryControls } from "./HistoryControls";
 import { MusicControl } from "./MusicControl";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 
@@ -47,7 +48,7 @@ function loadLayout() {
 async function resetLayout() {
   const { elements, panels } = useStore.getState();
   const ok = await showConfirm(
-    `${Object.keys(panels).length} panel(s) and ${Object.keys(elements).length} command(s) will be removed, and the saved draft deleted.\n\nThis cannot be undone. Save a layout first if you want to keep it.`,
+    `${Object.keys(panels).length} panel(s) and ${Object.keys(elements).length} command(s) will be removed, and the saved draft deleted.\n\nUndo brings it back until you leave the page. Save a layout to keep it.`,
     { title: "Discard the whole toolbar?", confirmLabel: "Reset", danger: true },
   );
   if (!ok) return;
@@ -89,6 +90,7 @@ export function Header() {
       <div className="download-button">
         <MusicControl />
         <ThemeSwitcher />
+        <HistoryControls />
         <Button variant="toolbar" size="toolbar" id="loadConfig" onClick={loadLayout}>
           <span className="toolbar-action-label">Load layout</span>
         </Button>

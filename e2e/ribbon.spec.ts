@@ -117,3 +117,36 @@ test.describe("ribbon", () => {
     await expect(page.locator("#extensionNameHint")).toHaveText("Give the extension a name");
   });
 });
+
+test.describe("history", () => {
+  test.beforeEach(async ({ page }) => openApp(page));
+
+  test("undo and redo step back and forward through changes", async ({ page }) => {
+    await expect(page.locator("#undoAction")).toBeDisabled();
+    await expect(page.locator("#redoAction")).toBeDisabled();
+
+    await page.locator("#addTab").click();
+    await expect(page.locator(".tab")).toHaveCount(2);
+    await page.locator("#undoAction").click();
+    await expect(page.locator(".tab")).toHaveCount(1);
+    await expect(page.locator("#redoAction")).toBeEnabled();
+    await page.locator("#redoAction").click();
+    await expect(page.locator(".tab")).toHaveCount(2);
+  });
+
+  test("Ctrl/Cmd+Z and Shift+Z work outside text fields", async ({ page }) => {
+    await page.locator("#addTab").click();
+    await expect(page.locator(".tab")).toHaveCount(2);
+    await page.locator("body").press("ControlOrMeta+z");
+    await expect(page.locator(".tab")).toHaveCount(1);
+    await page.locator("body").press("ControlOrMeta+Shift+z");
+    await expect(page.locator(".tab")).toHaveCount(2);
+  });
+
+  test("typing in a field keeps the browser's own undo", async ({ page }) => {
+    await page.locator("#addTab").click();
+    await page.locator("#extensionName").fill("Other");
+    await page.locator("#extensionName").press("ControlOrMeta+z");
+    await expect(page.locator(".tab")).toHaveCount(2);
+  });
+});
