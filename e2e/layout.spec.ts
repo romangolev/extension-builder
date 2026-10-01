@@ -153,4 +153,11 @@ test.describe("layout", () => {
     expect(await tree.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
     await expectNoSidewaysScroll(page);
   });
+
+  test("the tab icon is the app logo and it loads", async ({ page }) => {
+    const href = await page.locator('link[rel="icon"]').getAttribute("href");
+    expect(href).toMatch(/logo-[\w-]+\.svg$/);
+    const response = await page.request.get(new URL(href ?? "", page.url()).href);
+    expect(response.ok()).toBe(true);
+  });
 });
